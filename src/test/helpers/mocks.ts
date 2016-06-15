@@ -1,10 +1,10 @@
-import { IRobot, IRobotBrain, IListener, IResponse, IMessageDetail, IScopedHttpClient, IHttpResponse, IHttpClientHandler } from 'hubot';
+import { IRobot, IAdapter, IRobotBrain, IListener, IResponse, IMessageDetail, IScopedHttpClient, IHttpResponse, IHttpClientHandler } from 'hubot';
 import { ISlackAdapter, ICustomMessage } from 'hubot-slack';
 import { Application } from 'express';
 import { IAppVeyor, IBuildResponse, IDeployResponse } from '../../lib/appveyor';
 
 export class MockRobot implements IRobot {
-  public adapter: any;
+  public adapter: IAdapter;
   public brain: IRobotBrain;
   public router: Application;
 
@@ -43,17 +43,10 @@ export class MockRobotBrain implements IRobotBrain {
 
 export class MockAppVeyor implements IAppVeyor {
   private buildResponse: IBuildResponse;
-  private deployResponse: IDeployResponse;
 
   static builds(returnValue: IBuildResponse) {
     let ret = new MockAppVeyor();
     ret.buildResponse = returnValue;
-    return ret;
-  }
-
-  static deploys(returnValue: IDeployResponse) {
-    let ret = new MockAppVeyor();
-    ret.deployResponse = returnValue;
     return ret;
   }
 
@@ -62,6 +55,6 @@ export class MockAppVeyor implements IAppVeyor {
   }
 
   public deploy(http, projectSlug, version, environment) {
-    return Promise.resolve(this.deployResponse);
+    return null;
   }
 }

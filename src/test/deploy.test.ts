@@ -34,39 +34,40 @@ test('finbot > starts a deploy', (t) => {
 
   respondStub.callsArgWith(1, response);
 
-  const expectedLink = `https://ci.appveyor.com/project/${account}/${project}/deployment/${deploymentId}`
+  const expectedLink = `https://ci.appveyor.com/project/${account}/${project}/deployment/${deploymentId}`;
 
-  const appVeyor = MockAppVeyor.deploys({
-    link: expectedLink
-  });
+  const deployResponse = { link: expectedLink };
+  const deployPromise = Promise.resolve(deployResponse);
+
+  sinon.stub(deployPromise, 'then')
+       .callsArgWith(0, deployResponse)
+       .returns(Promise.resolve());
+
+  const appVeyor = new MockAppVeyor();
+  sinon.stub(appVeyor, 'deploy').returns(deployPromise);
 
   const slackAdapter = new MockSlackAdapter();
   const customMessageSpy = sinon.spy(slackAdapter, 'customMessage');
 
   robot.adapter = slackAdapter;
 
-  const expectedCustomMessage: ICustomMessage = {
-    channel: room,
-    text: 'Deploy started',
-    attachments: [
-      {
-        fallback: `Started deploy of '${project}' v${version} to '${environment}': ${expectedLink}`,
-        title: `Started deploy of '${project}' v${version}`,
-        title_link: expectedLink,
-        text: `v${version}`,
-        color: '#2795b6'
-      }
-    ]
-  };
-
   // act
   DeployScript(robot, appVeyor);
 
-  process.nextTick(() => {
-    // assert
-    sinon.assert.calledWith(respondStub, /deploy (.+) v(.+) to (.+)/i, sinon.match.func);
-    sinon.assert.calledWith(replyStub, `Starting deploy of '${project}' to '${environment}'...`);
+  // assert
+  sinon.assert.calledWith(respondStub, /deploy (.+) v(.+) to (.+)/i, sinon.match.func);
+  sinon.assert.calledWith(replyStub, `Starting deploy of '${project}' to '${environment}'...`);
+  sinon.assert.calledOnce(customMessageSpy);
 
-    sinon.assert.calledWith(customMessageSpy, sinon.match(expectedCustomMessage));
-  });
+  const actualCustomMessage: ICustomMessage = customMessageSpy.getCall(0).args[0];
+  t.is(actualCustomMessage.channel, room);
+  t.is(actualCustomMessage.text, 'Deploy started');
+  t.is(actualCustomMessage.attachments.length, 1);
+
+  const attachment = actualCustomMessage.attachments[0];
+  t.is(attachment.fallback, `Started deploy of '${project}' v${version} to '${environment}': ${expectedLink}`);
+  t.is(attachment.title, `Started deploy of '${project}' v${version}`);
+  t.is(attachment.title_link, expectedLink);
+  t.is(attachment.text, `v${version}`);
+  t.is(attachment.color, '#2795b6');
 });
