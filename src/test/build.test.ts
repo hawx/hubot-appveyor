@@ -43,7 +43,7 @@ test('finbot > starts a build', (t) => {
 
   const expectedLink = `https://ci.appveyor.com/project/${account}/${project}/build/${version}`;
 
-  const appVeyorStub = new MockAppVeyor({
+  const appVeyorStub = MockAppVeyor.builds({
     projectSlug: project,
     accountName: account,
     version: version,
@@ -118,7 +118,7 @@ test('finbot > notifies on build completion', (t) => {
   const postStub = sinon.stub(robotRouter, 'post');
   postStub.callsArgWith(1, request, response);
 
-  const appVeyorStub = new MockAppVeyor({
+  const appVeyorStub = MockAppVeyor.builds({
     projectSlug: project,
     accountName: Config.appveyor.account,
     version: version,

@@ -11,7 +11,6 @@ export default (robot: IRobot, appVeyor: IAppVeyor) => {
 
     appVeyor.build(robot.http, projectSlug)
       .then((data) => {
-        // create the message with attachment object
         let msgData: ICustomMessage = {
           channel: res.message.room,
           text: 'Build started',
@@ -27,13 +26,11 @@ export default (robot: IRobot, appVeyor: IAppVeyor) => {
         };
 
         const slackAdapter = robot.adapter as ISlackAdapter;
-
-        // post the message
         slackAdapter.customMessage(msgData);
 
         robot.brain.set(`${projectSlug}/${data.version}`, JSON.stringify({ username: res.message.user.name }));
-
-      }).catch(res.reply);
+      })
+      .catch(res.reply);
   });
 
   robot.router.post('/hubot/appveyor/webhook', (req, res) => {

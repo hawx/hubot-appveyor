@@ -7,13 +7,16 @@ export interface IBuildResponse {
   link: string;
 }
 
+export interface IDeployResponse {
+  link: string;
+}
+
 export interface IAppVeyor {
   build(http: (url: string) => IScopedHttpClient, projectSlug: string): Promise<IBuildResponse>;
+  deploy(http: (url: string) => IScopedHttpClient, projectSlug: string, version: string, environment: string): Promise<IDeployResponse>;
 }
 
 export class AppVeyor implements IAppVeyor {
-  static URL = 'https://ci.appveyor.com/api/builds';
-
   constructor(private token: string, private accountName: string) { }
 
   public build(http, projectSlug) {
@@ -23,7 +26,7 @@ export class AppVeyor implements IAppVeyor {
     });
 
     return new Promise<IBuildResponse>((resolve, reject) => {
-      this.post(http, body, (err, resp, data) => {
+      this.post(http, 'https://ci.appveyor.com/api/builds', body, (err, resp, data) => {
         if (err) reject(err);
         if (resp.statusCode !== 200) reject(new Error(`Got an unexpected status code: ${resp.statusCode}`));
 
@@ -39,8 +42,30 @@ export class AppVeyor implements IAppVeyor {
     });
   }
 
-  private post(http: (url: string) => IScopedHttpClient, body: string, callback: (err: Error, resp: IHttpResponse, data: string) => void) {
-    http(AppVeyor.URL)
+  public deploy(http, projectSlug, version, environment) {
+    const body = JSON.stringify({
+      environmentName: environment,
+      accountName: this.accountName,
+      projectSlug: projectSlug,
+      buildVersion: version
+    });
+
+    return new Promise<IDeployResponse>((resolve, reject) => {
+      this.post(http, 'https://ci.appveyor.com/api/deployments', body, (err, resp, data) => {
+        if (err) reject(err);
+        if (resp.statusCode !== 200) reject(new Error(`Got an unexpected status code: ${resp.statusCode}`));
+
+        const o = JSON.parse(data);
+
+        resolve({
+          link: `https://ci.appveyor.com/project/${this.accountName}/${projectSlug}/deployment/${o.deploymentId}`
+        });
+      });
+    });
+  }
+
+  private post(http: (url: string) => IScopedHttpClient, url: string, body: string, callback: (err: Error, resp: IHttpResponse, data: string) => void) {
+    http(url)
       .header('Authorization', `Bearer ${this.token}`)
       .header('Content-Type', 'application/json')
       .header('Accept', 'application/json')

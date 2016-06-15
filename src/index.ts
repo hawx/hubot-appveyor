@@ -10,10 +10,10 @@ import DeployScript from './scripts/deploy';
 import { AppVeyor } from './lib/appveyor';
 import { Config } from './lib/config';
 
-const appVeyor = new AppVeyor(Config.appveyor.token, Config.appveyor.account);
+const appveyor = new AppVeyor(Config.appveyor.token, Config.appveyor.account);
 
 module.exports = (robot: IRobot) => {
   HelloScript(robot);
-  BuildScript(robot, appVeyor);
-  DeployScript(robot);
+  BuildScript(robot, appveyor);
+  DeployScript(robot, appveyor);
 };

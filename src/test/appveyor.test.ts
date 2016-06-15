@@ -61,3 +61,47 @@ test.cb('appveyor > build', (t) => {
     t.end();
   }).catch(t.end);
 });
+
+test.cb('appveyor > deploy', (t) => {
+  const token = 'my-token';
+  const account = 'my-account';
+  const project = 'my-project';
+  const version = 'a.b.c';
+  const environment = 'dev-env';
+  const deploymentId = 1234567890;
+  const response = {deploymentId: deploymentId};
+
+  const appveyor = new AppVeyor(token, account);
+
+  const httpClient = new MockScopedHttpClient();
+
+  const headerSpy = sinon.spy(httpClient, 'header');
+
+  const postStub = sinon.stub(httpClient, 'post');
+  postStub.returns((handler: IHttpClientHandler) => {
+    handler(null, { statusCode: 200 }, JSON.stringify(response));
+  });
+
+  const expectedPostBody = JSON.stringify({
+    environmentName: environment,
+    accountName: account,
+    projectSlug: project,
+    buildVersion: version
+  });
+
+  const httpStub = sinon.stub().returns(httpClient);
+
+  const result = appveyor.deploy(httpStub, project, version, environment);
+
+  t.true(httpStub.calledWith('https://ci.appveyor.com/api/deployments'));
+  t.true(headerSpy.calledWith('Authorization', `Bearer ${token}`));
+  t.true(headerSpy.calledWith('Content-Type', 'application/json'));
+  t.true(headerSpy.calledWith('Accept', 'application/json'));
+  t.true(postStub.calledWith(expectedPostBody));
+
+  result.then((data) => {
+    t.is(data.link, `https://ci.appveyor.com/project/${account}/${project}/deployment/${deploymentId}`);
+
+    t.end();
+  }).catch(t.end);
+});

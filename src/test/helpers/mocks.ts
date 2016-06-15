@@ -1,7 +1,7 @@
 import { IRobot, IRobotBrain, IListener, IResponse, IMessageDetail, IScopedHttpClient, IHttpResponse, IHttpClientHandler } from 'hubot';
 import { ISlackAdapter, ICustomMessage } from 'hubot-slack';
 import { Application } from 'express';
-import { IAppVeyor, IBuildResponse } from '../../lib/appveyor';
+import { IAppVeyor, IBuildResponse, IDeployResponse } from '../../lib/appveyor';
 
 export class MockRobot implements IRobot {
   public adapter: any;
@@ -42,9 +42,26 @@ export class MockRobotBrain implements IRobotBrain {
 }
 
 export class MockAppVeyor implements IAppVeyor {
-  constructor(private returnValue: IBuildResponse) {}
+  private buildResponse: IBuildResponse;
+  private deployResponse: IDeployResponse;
+
+  static builds(returnValue: IBuildResponse) {
+    let ret = new MockAppVeyor();
+    ret.buildResponse = returnValue;
+    return ret;
+  }
+
+  static deploys(returnValue: IDeployResponse) {
+    let ret = new MockAppVeyor();
+    ret.deployResponse = returnValue;
+    return ret;
+  }
 
   public build(http, projectSlug) {
-    return Promise.resolve(this.returnValue);
+    return Promise.resolve(this.buildResponse);
+  }
+
+  public deploy(http, projectSlug, version, environment) {
+    return Promise.resolve(this.deployResponse);
   }
 }
